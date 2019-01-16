@@ -21,6 +21,7 @@ module.exports = (commands, options = {}) => {
     return concurrently(commands, {
         raw: options.raw,
         successCondition: options.successCondition,
+        maxConcurrent: options.maxConcurrent,
         controllers: [
             new LogError({ logger }),
             new LogOutput({ logger }),

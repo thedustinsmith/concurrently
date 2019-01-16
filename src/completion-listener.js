@@ -1,17 +1,23 @@
 const Rx = require('rxjs');
-const { bufferCount, map, switchMap, take } = require('rxjs/operators');
+const { bufferCount, map, switchMap, take, mergeMap } = require('rxjs/operators');
+const { defer, from } = require('rxjs');
 
 module.exports = class CompletionListener {
-    constructor({ successCondition, scheduler }) {
+    constructor({ successCondition, scheduler, maxConcurrent }) {
         this.successCondition = successCondition;
         this.scheduler = scheduler;
+        this.maxConcurrent = maxConcurrent;
     }
 
-    listen(commands) {
-        const closeStreams = commands.map(command => command.close);
-        const allClosed = Rx.zip(...closeStreams);
-        return Rx.merge(...closeStreams).pipe(
-            bufferCount(closeStreams.length),
+    startAndListen(commands) {
+        const concurrentCommands = commands.map(c => defer(() => {
+            c.start();
+            return c.close.pipe(take(1));
+        }));
+        
+        from(concurrentCommands).pipe(
+            mergeMap(c=>c, this.maxConcurrent),
+            bufferCount(concurrentCommands.length),
             map(exitCodes => {
                 switch (this.successCondition) {
                 /* eslint-disable indent */

@@ -16,6 +16,7 @@ const defaults = {
     spawn,
     kill: treeKill,
     raw: false,
+    maxConcurrent: null,
     controllers: []
 };
 
@@ -49,8 +50,7 @@ module.exports = (commands, options) => {
         commands
     );
 
-    commands.forEach(command => command.start());
-    return new CompletionListener({ successCondition: options.successCondition }).listen(commands);
+    return new CompletionListener({ successCondition: options.successCondition, maxConcurrent: options.maxConcurrent }).startAndListen(commands);
 };
 
 function mapToCommandInfo(command) {
